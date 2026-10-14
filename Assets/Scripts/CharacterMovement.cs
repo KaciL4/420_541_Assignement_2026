@@ -1,18 +1,124 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class CharacterMovement : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+[Header("Movement Settings")]
+    [SerializeField] private float moveSpeed = 7f;      // units per second
+    [SerializeField] private float turnSpeed = 150f;    // degrees per second
+    [SerializeField] private float jumpForce = 5f;      // strength of the jump
+    [SerializeField] private float doubleJumpForce = 4f;
+
+    [Header("Ground Check Settings")]
+    [SerializeField] private float groundDistance = 0.5f; // ray length
+    [SerializeField] private LayerMask groundMask;        // ground layers
+
+    private Rigidbody rb;               // the physics body we move
+    private Vector3 moveDirection;      // worked out from input in Update()
+    private float turnInput;            // horizontal input for rotation
+    private bool isGrounded;            // true when standing on the ground
+    private bool jumpRequested = false; // set in Update(), used later
+    private bool doubleJumpRequested = false; // set in TryDoubleJump()
+    private bool hasDoubleJumped = false;     // one per jump
+    private bool isRunning = false; //shift key down to run
+
+    public bool IsGrounded => isGrounded;
+
+    private PlayerPowerUps powerUps;
+
+    private void Start()
     {
-        
+        rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        powerUps = GetComponent<PlayerPowerUps>();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        
+        // 1. Ground Check
+        isGrounded = Physics.Raycast(transform.position + transform.up*groundDistance/2, -transform.up, groundDistance, groundMask);
+
+        // Back on the ground: the double jump is available again
+        if (isGrounded)
+        {
+            hasDoubleJumped = false;
+        }
+
+        // 2. Read Inputs
+        turnInput = Input.GetAxisRaw("Horizontal"); // A/D or Left/Right turn input
+        float moveZ = Input.GetAxisRaw("Vertical");  // W/S or Up/Down forward/backward
+
+        // Check if Shift is down & the player is actually trying to move forward/backward
+        isRunning = Input.GetKey(KeyCode.LeftShift) && moveZ > 0;
+
+        // Rotate the player transform in Update for responsive turning visuals
+        transform.Rotate(0f, turnInput * turnSpeed * Time.deltaTime, 0f);
+
+        // Calculate forward movement relative to current facing direction
+        moveDirection = transform.forward * moveZ;
+
+        // 3. Handle Jump Input
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            jumpRequested = true;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        MovePlayer();
+ 
+        if (jumpRequested)
+        {
+            Jump(jumpForce);
+            jumpRequested = false;
+        }
+ 
+        // NEW: the second jump, in mid-air
+        if (doubleJumpRequested)
+        {
+            Jump(doubleJumpForce);
+            doubleJumpRequested = false;
+        }
+    }
+
+
+    private void MovePlayer()
+    {
+        // Calculate final speed (doubled if running)
+        float currentSpeed = isRunning ? moveSpeed * 2f : moveSpeed;
+
+        //orange pickup speed boost
+        if (powerUps != null && powerUps.hasSpeedBoost)
+        {
+            currentSpeed *= 1.5f; // Increases movement speed
+        }
+
+        // Calculate velocity based on current forward vector
+        Vector3 targetVelocity = moveDirection * moveSpeed;
+
+        // Apply movement while preserving vertical velocity (gravity/jumping)
+        rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+    }
+
+    private void Jump(float force)
+    {
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        rb.AddForce(Vector3.up * force, ForceMode.VelocityChange);
+    }
+    // Tries to jump a second time in mid-air.
+    // Returns true if the double jump really happened.
+    public bool TryDoubleJump()
+    {
+        // the Blue Pickup Jump Boost state ---
+        if (powerUps == null || !powerUps.hasJumpBoost) return false;
+
+        // Not allowed on the ground, or if it was already used
+        if (isGrounded || hasDoubleJumped) return false;
+ 
+        doubleJumpRequested = true;
+        hasDoubleJumped = true;
+        return true;
     }
 }
