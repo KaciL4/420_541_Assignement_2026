@@ -101,8 +101,8 @@ GameObject:
   - component: {fileID: 4309214650489517557}
   - component: {fileID: 5640362054360027499}
   - component: {fileID: 6816889763466123940}
-  - component: {fileID: -5763883033819422712}
   - component: {fileID: -1616413687457223353}
+  - component: {fileID: 5691993185795373653}
   m_Layer: 0
   m_Name: YellowScorePickup
   m_TagString: Untagged
@@ -169,22 +169,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &-5763883033819422712
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8809169674503969205}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5a0ed9426cb5ca41b001ad78d81b31f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PickupItem
-  type: 0
-  points: 50
-  pickupSound: {fileID: 8300000, guid: 96ed662a11981664198f1505a9de356e, type: 3}
-  pickupEffect: {fileID: 0}
 --- !u!82 &-1616413687457223353
 AudioSource:
   m_ObjectHideFlags: 0
@@ -282,3 +266,20 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &5691993185795373653
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8809169674503969205}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5a0ed9426cb5ca41b001ad78d81b31f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickupItem
+  type: 0
+  points: 50
+  pickupSound: {fileID: 8300000, guid: 96ed662a11981664198f1505a9de356e, type: 3}
+  respawnDelay: 0
+  visuals: {fileID: 0}

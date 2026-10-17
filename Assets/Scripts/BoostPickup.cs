@@ -1,104 +1,78 @@
+using System.Collections;
 using UnityEngine;
 
 public class PickupItem : MonoBehaviour
 {
     public enum PickupType { StandardScore, SpeedBoost, ScoreBoost, JumpBoost }
+    
     [Header("Pickup Settings")]
     [SerializeField] private PickupType type;
     
-    [Header("Values & Timing")]
     [SerializeField] private int points = 50; 
-    [SerializeField] private float boostDuration = 10f; // Duration for the power-up boost
-    [SerializeField] private float respawnDelay = 5f;   // Time hidden before respawning (0 or negative = destroy permanently)
-    
-    [Header("Audio & Effects")]
     [SerializeField] private AudioClip pickupSound;
-    [SerializeField] private GameObject pickupEffect; // Particle prefab
-    
-    private Collider itemCollider;
-    private Renderer itemRenderer;
 
-    private void Awake()
-    {
-        itemCollider = GetComponent<Collider>();
-        itemRenderer = GetComponent<Renderer>(); // Automatically finds MeshRenderer, SpriteRenderer, etc.
-    }
+    [Header("Respawn Settings")]
+    [SerializeField] private float respawnDelay = 30f;
+
+    [SerializeField] private GameObject visuals;
+
+    
     private void OnTriggerEnter(Collider other)
     {
-        // Only react to the player, ignore everything else
-        if (!other.CompareTag("Player")) return;
+        if (other.CompareTag("Player"))
+        {
+            TriggerPickupSound();
 
-        // play sound and spawn particle effect if assigned
-        if (pickupSound != null && GetComponent<AudioSource>() != null)
-        {
-            GetComponent<AudioSource>().PlayOneShot(pickupSound);
-        }
-        if (pickupEffect != null)
-        {
-            Instantiate(pickupEffect, transform.position, Quaternion.identity);
-        }
-        //Handle Standard Score Pickup
-        if (type == PickupType.StandardScore)
-        {
-            if (ScoreManager.Instance != null)
+            //handle Standard Score Pickup (Destroyed permanently)
+            if (type == PickupType.StandardScore)
             {
-                ScoreManager.Instance.AddScore(points);
+                if (ScoreManager.Instance != null)
+                {
+                    ScoreManager.Instance.AddScore(points);
+                }
+                
+                Destroy(gameObject);
+                return; 
             }
-            
-            HandlePickupConsumption();
-            return;
-        }
 
-        //handle Boost Power-Ups
-        PlayerPowerUps powerUps = other.GetComponentInParent<PlayerPowerUps>();
-        if (powerUps != null)
-        {
-            switch (type)
+            //handle Boost Power-Ups
+            PlayerPowerUps powerUps = other.GetComponentInParent<PlayerPowerUps>();
+            if (powerUps != null)
             {
-                case PickupType.SpeedBoost:
-                    powerUps.ActivateSpeedBoost(boostDuration);
-                    break;
-                case PickupType.ScoreBoost:
-                    powerUps.ActivateScoreBoost(boostDuration);
-                    break;
-                case PickupType.JumpBoost:
-                    powerUps.ActivateJumpBoost(boostDuration);
-                    break;
+                switch (type)
+                {
+                    case PickupType.SpeedBoost:
+                        powerUps.ActivateSpeedBoost(5f);
+                        break;
+                    case PickupType.ScoreBoost:
+                        powerUps.ActivateScoreBoost(10f);
+                        break;
+                    case PickupType.JumpBoost:
+                        powerUps.ActivateJumpBoost(30f);
+                        break;
+                }
+                
+              // Disappear, disable collision, and call Reappear() after 30 seconds
+                if (visuals != null) visuals.SetActive(false);
+                GetComponent<Collider>().enabled = false;
+                Invoke(nameof(Reappear), respawnDelay);
             }
-            
-            HandlePickupConsumption();
         }
-    }
-    private void HandlePickupConsumption()
-    {
-        //if respawnDelay is set to 0 or less, destroy it permanently
-        if (respawnDelay <= 0f)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        // disable the renderer (hides it) and disable the collider
-        if (itemRenderer != null)
-        {
-            itemRenderer.enabled = false;
-        }
-        if (itemCollider != null)
-        {
-            itemCollider.enabled = false;
-        }
-        Invoke(nameof(Reappear), respawnDelay);
     }
 
     private void Reappear()
     {
-        //Re-enable the renderer and collider
-        if (itemRenderer != null)
+        if (visuals != null) visuals.SetActive(true);
+        GetComponent<Collider>().enabled = true;
+    }
+
+    private void TriggerPickupSound()
+    {
+        // Play if a sound clip was assigned in the Inspector[cite: 1]
+        if (pickupSound != null)
         {
-            itemRenderer.enabled = true;
-        }
-        if (itemCollider != null)
-        {
-            itemCollider.enabled = true;
+            // Plays the sound at the pickup's exact 3D position[cite: 1]
+            AudioSource.PlayClipAtPoint(pickupSound, transform.position);
         }
     }
 }
